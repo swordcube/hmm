@@ -97,17 +97,22 @@ class Shell {
     // var args = ["git", name, url, "--skip-dependencies"].concat(ref.toArray()).concat(dir.toArray());
     // return haxelib(args, options);
 
+    final hName:String = name.replace(".", ",");
     final localHaxelibRepoPath:String = HmmConfigs.getLocalHaxelibRepoPath();
-    final entireLibraryPath:String = Path.join([localHaxelibRepoPath, name]);
-    if(sys.FileSystem.exists(entireLibraryPath)) {
+    
+    final entireLibraryPath:String = Path.join([localHaxelibRepoPath, hName]);
+    if(!sys.FileSystem.exists(entireLibraryPath)) {
+      // create fresh
+      FileSystem.createDirectory(entireLibraryPath);
+      File.saveContent(Path.join([entireLibraryPath, ".current"]), "git");
+      return;
+    }
+    final entireLibraryGitRepoPath:String = Path.join([entireLibraryPath, "git"]);
+    if(sys.FileSystem.exists(entireLibraryGitRepoPath)) {
       // update lib
       haxelibUpdate(name, options);
       return;
     }
-    // create fresh
-    FileSystem.createDirectory(entireLibraryPath);
-    File.saveContent(Path.join([entireLibraryPath, ".current"]), "git");
-
     final prevCwd:String = Sys.getCwd();
     setCwd(entireLibraryPath, options);
 
