@@ -94,8 +94,27 @@ class Shell {
   }
 
   public static function haxelibGit(name : String, url : String, ref : Option<String>, dir : Option<String>, options: ShellOptions) : Void {
-    var args = ["git", name, url, "--skip-dependencies", "--depth", "1"].concat(ref.toArray()).concat(dir.toArray());
-    return haxelib(args, options);
+    // var args = ["git", name, url, "--skip-dependencies"].concat(ref.toArray()).concat(dir.toArray());
+    // return haxelib(args, options);
+
+    final localHaxelibRepoPath:String = HmmConfigs.getLocalHaxelibRepoPath();
+    final entireLibraryPath:String = Path.join([localHaxelibRepoPath, name]);
+    if(sys.FileSystem.exists(entireLibraryPath)) {
+      // update lib
+      haxelibUpdate(name, options);
+      return;
+    }
+    // create fresh
+    FileSystem.createDirectory(entireLibraryPath);
+    File.saveContent(Path.join([entireLibraryPath, ".current"]), "git");
+
+    final prevCwd:String = Sys.getCwd();
+    setCwd(entireLibraryPath, options);
+
+    runCommand("git", ["clone", url, "git"].concat(["--branch", ref.get()]).concat(dir.toArray()).concat(["--depth", "1", "--recurse-submodules"]), options);
+    setCwd(prevCwd, options);
+
+    runCommand("haxelib", ["set", name, "git"], options);
   }
 
   public static function haxelibHg(name : String, url : String, ref : Option<String>, dir : Option<String>, options: ShellOptions) : Void {
